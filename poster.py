@@ -58,7 +58,7 @@ def get_paper_info(id,max_results=1):
     abstract = result.summary
     return title,abstract.replace('\n',' ').replace('{','').replace('}','')
 
-def get_poster(text,idx):
+def get_poster(text,id,idx):
     header = Header(text=text,
                     text_width=80,
                     font=Font(path=path+'Handwritten-English-2.ttf',size=30),
@@ -123,11 +123,11 @@ def generate_video(id):
         if _o[0] == a:
             _output = "".join(_o[1:])
             asyncio.run(gen_voice(_output,id,idx,girl))
-            get_poster(idx,_output)
+            get_poster(_output,id,idx)
         else:
             _output = "".join(_o[1:])
             asyncio.run(gen_voice(_output,id,idx,boy))
-            get_poster(idx,_output)
+            get_poster(_output,id,idx)
 
     image_folder = './'+id+'/poster'
     audio_folder = './'+id+'/audios'
