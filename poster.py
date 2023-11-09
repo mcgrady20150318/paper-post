@@ -142,7 +142,7 @@ def generate_video(id):
     video = concatenate_videoclips(image_clips)
     final_video = video.set_audio(audio_clips)
     # audio_clips.write_audiofile('./'+id+'/'+id+'.mp3')
-    final_video.write_videofile('./'+id+'/'+id+'.mp4',codec='libx264')
+    final_video.write_videofile('./'+id+'/'+id+'.mp4',codec='libx264',fps=24)
     with open('./'+id+'/'+id+'.mp4', 'rb') as f:
         file_content = f.read()
     r.set(id+':poster_'+id+".mp4",file_content)
