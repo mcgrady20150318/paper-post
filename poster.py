@@ -131,8 +131,10 @@ def generate_video(id):
 
     image_folder = './'+id+'/poster'
     audio_folder = './'+id+'/audio'
-    image_files = sorted(os.listdir(image_folder))
-    audio_files = sorted(os.listdir(audio_folder))
+    image_files = os.listdir(image_folder)
+    audio_files = os.listdir(audio_folder)
+    image_files.sort(key=lambda x:int(x[:-4]))
+    audio_files.sort(key=lambda x:int(x[:-4]))
     audio_clips = concatenate_audioclips([AudioFileClip(os.path.join(audio_folder,c)) for c in audio_files])
     image_clips = []
     for idx, image in enumerate(image_files):
