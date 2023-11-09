@@ -60,8 +60,8 @@ def get_paper_info(id,max_results=1):
 
 def get_poster(text,id,idx):
     header = Header(text=text,
-                    text_width=80,
-                    font=Font(path=path+'FangZhengKaiTi-GBK-1.ttf',size=30),
+                    text_width=60,
+                    font=Font(path=path+'FangZhengKaiTi-GBK-1.ttf',size=20),
                     align='center',
                     color='#000100',
                     )
