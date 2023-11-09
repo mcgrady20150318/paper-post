@@ -58,6 +58,18 @@ def get_paper_info(id,max_results=1):
     abstract = result.summary
     return title,abstract.replace('\n',' ').replace('{','').replace('}','')
 
+def get_poster(text,idx):
+    header = Header(text=title,
+                    text_width=80,
+                    font=Font(path=path+'Handwritten-English-2.ttf',size=30),
+                    align='center',
+                    color='#000100',
+                    )
+    content = Content(header=header)
+    img = Image(content,fullpath='./'+id+'/poster/'+str(idx) + '.png')
+    img.draw_on_image(path+'cover.jpg')
+    os.rename('./'+id+'/poster/'+str(idx) + '.png','./'+id+'/poster/'+str(idx) + '.jpg')
+
 def get_cover(title):
     header = Header(text=title,
                     text_width=50,
@@ -69,14 +81,15 @@ def get_cover(title):
     img = Image(content,fullpath='./'+id+'/cover.png')
     img.draw_on_image(path+'cover.jpg')
     os.rename('./'+id+'/cover.png','./'+id+'/cover.jpg')
-    with open('./'+id+'/cover.jpg', 'rb') as f:
-        file_content = f.read()
-    r.set('bilibili:'+id+':radio_cover.jpg',file_content)
+    # with open('./'+id+'/cover.jpg', 'rb') as f:
+        # file_content = f.read()
+    # r.set('bilibili:'+id+':radio_cover.jpg',file_content)
 
 def generate_readme(id):
     if not os.path.exists('./'+id):
         os.mkdir('./'+id)
         os.mkdir('./'+id+'/audio')
+        os.mkdir('./'+id+'/poster')
     title,abstract  = get_paper_info(id)
     get_cover(title)
     prompt_template =  """现在你是Paperweekly论文电台分享主播Shirin，请根据论文标题"%s"和摘要"%s",生成一段电台播报风格的采访稿，严格按照一问一答的形式生成，角色分别是主播Shirin和AI研究人员Ian，生成内容如下：""" %(title,abstract)
@@ -95,13 +108,13 @@ def get_time_count(audio_file):
     time_count = int(audio.info.length)
     return time_count
 
-def generate_radio(id):
+def generate_video(id):
     generate_readme(id)
     a = ''
     with open('./'+id+'/r.txt','r') as f:
         data = f.read()
     data = data.replace('：',':')
-    r.set('bilibili:'+id+':r.txt',data)
+    # r.set('bilibili:'+id+':r.txt',data)
     output = data.split('\n\n')
     for idx,o in enumerate(output):
         _o = o.split(':')
@@ -110,55 +123,34 @@ def generate_radio(id):
         if _o[0] == a:
             _output = "".join(_o[1:])
             asyncio.run(gen_voice(_output,id,idx,girl))
+            get_poster(idx,_output)
         else:
             _output = "".join(_o[1:])
             asyncio.run(gen_voice(_output,id,idx,boy))
+            get_poster(idx,_output)
 
-    image_files = [id+'/cover.jpg'] * 10
-    audios = os.listdir('./'+id+'/audio/')
-    audios.sort(key=lambda x:int(x[:-4]))
-    audio_files = ['./'+id+'/audio/' + a for a in audios]
-
-    total_time = 0
-
-    for audio_file in audio_files:
-        total_time += get_time_count(audio_file)
-
-    audio_clip = concatenate_audioclips([AudioFileClip(c) for c in audio_files])
-    image_clip = ImageSequenceClip(image_files, fps=len(image_files)/total_time)
-    audio_clip.write_audiofile('./'+id+'/'+id+'.mp3')
-    with open('./'+id+'/'+id+'.mp3', 'rb') as f:
-        file_content = f.read()
-    r.set('bilibili:'+id+':radio_'+id+".mp3",file_content)
-    print('...generate radio done...')
-    video_clip = image_clip.set_audio(audio_clip)
-    video_clip.write_videofile('./'+id+'/'+id+'.mp4',codec='libx264')
+    image_folder = './'+id+'/poster'
+    audio_folder = './'+id+'/audios'
+    image_files = sorted(os.listdir(image_folder))
+    audio_files = sorted(os.listdir(audio_folder))
+    audio_clips = concatenate_audioclips([AudioFileClip(os.path.join(audio_folder,c)) for c in audio_files])
+    image_clips = []
+    for idx, image in enumerate(image_files):
+        duration = get_time_count(os.path.join(audio_folder, audio_files[idx]))
+        _image = ImageClip(os.path.join(image_folder, image)).set_duration(duration)
+        image_clips.append(_image)
+    video = concatenate_videoclips(image_clips)
+    final_video = video.set_audio(audio_clips)
+    final_video.write_videofile('output.mp4',fps=24)
+    audio_clips.write_audiofile('./'+id+'/'+id+'.mp3')
+    final_video.write_videofile('./'+id+'/'+id+'.mp4',codec='libx264')
     with open('./'+id+'/'+id+'.mp4', 'rb') as f:
         file_content = f.read()
-    r.set('bilibili:'+id+':radio_'+id+".mp4",file_content)
-    r.rpush('radio_cached_ids',id)
+    r.set(id+':poster_'+id+".mp4",file_content)
     print('...generate video done...')
 
-def get_today_list(day=0):
-    ids = r.lrange('radio_cached_ids',0,-1)
-    ids = [id.decode("utf-8") for id in ids]
-    today = (datetime.date.today() - datetime.timedelta(day)).strftime('%Y-%m-%d')
-    url = 'https://huggingface.co/papers?date='+today
-    x = requests.get(url)
-    data = x.text
-    regex = re.compile(r'<a href="/papers/(.*?)"')
-    papers = re.findall(regex,data)
-    paperlist = list(set(papers))
-    paperlist = [paper for paper in paperlist if len(paper) == 10]
-    arxivids = [paper for paper in paperlist if paper not in ids]
-    return arxivids
 
 if __name__ == '__main__':
-    ids = get_today_list()        
-    print(ids)
-    for id in ids:
-        r.rpush('radio_paper',id)
-        try:
-            generate_radio(id)
-        except:
-            print('exception')
+    id = '2309.07852'
+    generate_video(id)
+    
