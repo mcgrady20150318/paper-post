@@ -141,8 +141,7 @@ def generate_video(id):
         image_clips.append(_image)
     video = concatenate_videoclips(image_clips)
     final_video = video.set_audio(audio_clips)
-    final_video.write_videofile('output.mp4',fps=24)
-    audio_clips.write_audiofile('./'+id+'/'+id+'.mp3')
+    # audio_clips.write_audiofile('./'+id+'/'+id+'.mp3')
     final_video.write_videofile('./'+id+'/'+id+'.mp4',codec='libx264')
     with open('./'+id+'/'+id+'.mp4', 'rb') as f:
         file_content = f.read()
