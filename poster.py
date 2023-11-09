@@ -59,7 +59,7 @@ def get_paper_info(id,max_results=1):
     return title,abstract.replace('\n',' ').replace('{','').replace('}','')
 
 def get_poster(text,idx):
-    header = Header(text=title,
+    header = Header(text=text,
                     text_width=80,
                     font=Font(path=path+'Handwritten-English-2.ttf',size=30),
                     align='center',
@@ -70,7 +70,7 @@ def get_poster(text,idx):
     img.draw_on_image(path+'cover.jpg')
     os.rename('./'+id+'/poster/'+str(idx) + '.png','./'+id+'/poster/'+str(idx) + '.jpg')
 
-def get_cover(title):
+def get_cover(title,id):
     header = Header(text=title,
                     text_width=50,
                     font=Font(path=path+'Handwritten-English-2.ttf',size=40),
@@ -91,7 +91,7 @@ def generate_readme(id):
         os.mkdir('./'+id+'/audio')
         os.mkdir('./'+id+'/poster')
     title,abstract  = get_paper_info(id)
-    get_cover(title)
+    get_cover(title,id)
     prompt_template =  """现在你是Paperweekly论文电台分享主播Shirin，请根据论文标题"%s"和摘要"%s",生成一段电台播报风格的采访稿，严格按照一问一答的形式生成，角色分别是主播Shirin和AI研究人员Ian，生成内容如下：""" %(title,abstract)
     PROMPT = PromptTemplate(template=prompt_template, input_variables=[])
     chain = LLMChain(llm=llm, prompt=PROMPT)
